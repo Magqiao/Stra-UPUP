@@ -4,13 +4,7 @@
     "slug": "stra-upup",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,13 +12,12 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.kobehan.straupup"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "extra": {
+      "eas": {
+        "projectId": "149b22bd-7db5-4829-b910-a090151a5c78"
+      }
     }
   }
 }
