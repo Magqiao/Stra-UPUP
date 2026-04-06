@@ -1,24 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Platform, Modal, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const App = () => {
   const [selectedTab, setSelectedTab] = useState('预案');
   const [plan, setPlan] = useState({
     date: new Date().toISOString().split('T')[0],
-    countryWill: '',
-    news: '',
-    capitalType: '',
-    market: '',
-    sector: '',
+    dimensions: {
+      countryWill: '',
+      news: '',
+      capitalType: '',
+      market: '',
+      sector: ''
+    },
     stock: '',
-    buyConditions: '',
-    sellConditions: '',
+    buy: {
+      method: '',
+      conditions: '',
+      position: ''
+    },
+    sell: {
+      method: '',
+      conditions: ''
+    },
     notes: ''
   });
   const [plans, setPlans] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // 维度选项
+  const dimensionOptions = {
+    countryWill: ['维护', '打压'],
+    news: ['利好消息', '利空消息'],
+    capitalType: ['量化（技术派）', '散户', '游资'],
+    market: ['上升', '震荡', '下跌'],
+    sector: ['上升', '震荡', '下跌']
+  };
+
+  // 买入方式选项
+  const buyMethodOptions = ['分仓', '聚焦'];
 
   const handleSave = () => {
     if (isEditing) {
@@ -30,14 +52,23 @@ const App = () => {
     }
     setPlan({
       date: new Date().toISOString().split('T')[0],
-      countryWill: '',
-      news: '',
-      capitalType: '',
-      market: '',
-      sector: '',
+      dimensions: {
+        countryWill: '',
+        news: '',
+        capitalType: '',
+        market: '',
+        sector: ''
+      },
       stock: '',
-      buyConditions: '',
-      sellConditions: '',
+      buy: {
+        method: '',
+        conditions: '',
+        position: ''
+      },
+      sell: {
+        method: '',
+        conditions: ''
+      },
       notes: ''
     });
     setIsEditing(false);
@@ -53,6 +84,75 @@ const App = () => {
   const handleDelete = (index) => {
     const updatedPlans = plans.filter((_, i) => i !== index);
     setPlans(updatedPlans);
+  };
+
+  const handleDimensionChange = (dimension, value) => {
+    setPlan({
+      ...plan,
+      dimensions: {
+        ...plan.dimensions,
+        [dimension]: value
+      }
+    });
+  };
+
+  const handleDimensionInput = (dimension, value) => {
+    setPlan({
+      ...plan,
+      dimensions: {
+        ...plan.dimensions,
+        [dimension]: value
+      }
+    });
+  };
+
+  const handleBuyChange = (field, value) => {
+    setPlan({
+      ...plan,
+      buy: {
+        ...plan.buy,
+        [field]: value
+      }
+    });
+  };
+
+  const handleBuyInput = (field, value) => {
+    setPlan({
+      ...plan,
+      buy: {
+        ...plan.buy,
+        [field]: value
+      }
+    });
+  };
+
+  const handleSellChange = (field, value) => {
+    setPlan({
+      ...plan,
+      sell: {
+        ...plan.sell,
+        [field]: value
+      }
+    });
+  };
+
+  const handleSellInput = (field, value) => {
+    setPlan({
+      ...plan,
+      sell: {
+        ...plan.sell,
+        [field]: value
+      }
+    });
+  };
+
+  const generateDate = () => {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    setPlan({
+      ...plan,
+      date: formattedDate
+    });
   };
 
   return (
@@ -88,97 +188,254 @@ const App = () => {
             
             <View style={styles.formGroup}>
               <Text style={styles.label}>日期</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.date} 
-                onChangeText={(text) => setPlan({...plan, date: text})}
-              />
+              <View style={styles.dateContainer}>
+                <TextInput 
+                  style={[styles.input, styles.dateInput]} 
+                  value={plan.date} 
+                  onChangeText={(text) => setPlan({...plan, date: text})}
+                />
+                <TouchableOpacity style={styles.dateButton} onPress={generateDate}>
+                  <Text style={styles.dateButtonText}>生成当日</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>国家意志</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.countryWill} 
-                onChangeText={(text) => setPlan({...plan, countryWill: text})}
-                placeholder="政策方向、监管动态等"
-              />
+            {/* 维度选择 */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>考虑维度</Text>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>国家意志</Text>
+                <View style={styles.optionContainer}>
+                  {dimensionOptions.countryWill.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.dimensions.countryWill === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleDimensionChange('countryWill', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.dimensions.countryWill === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.dimensions.countryWill} 
+                  onChangeText={(text) => handleDimensionInput('countryWill', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>消息面</Text>
+                <View style={styles.optionContainer}>
+                  {dimensionOptions.news.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.dimensions.news === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleDimensionChange('news', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.dimensions.news === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.dimensions.news} 
+                  onChangeText={(text) => handleDimensionInput('news', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>资金类型（对手盘）</Text>
+                <View style={styles.optionContainer}>
+                  {dimensionOptions.capitalType.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.dimensions.capitalType === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleDimensionChange('capitalType', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.dimensions.capitalType === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.dimensions.capitalType} 
+                  onChangeText={(text) => handleDimensionInput('capitalType', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>大盘</Text>
+                <View style={styles.optionContainer}>
+                  {dimensionOptions.market.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.dimensions.market === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleDimensionChange('market', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.dimensions.market === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.dimensions.market} 
+                  onChangeText={(text) => handleDimensionInput('market', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>板块</Text>
+                <View style={styles.optionContainer}>
+                  {dimensionOptions.sector.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.dimensions.sector === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleDimensionChange('sector', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.dimensions.sector === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.dimensions.sector} 
+                  onChangeText={(text) => handleDimensionInput('sector', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>消息面</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.news} 
-                onChangeText={(text) => setPlan({...plan, news: text})}
-                placeholder="行业新闻、公司公告等"
-              />
+            {/* 个股信息 */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>个股</Text>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>股票代码/名称</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.stock} 
+                  onChangeText={(text) => setPlan({...plan, stock: text})}
+                  placeholder="输入股票代码或名称"
+                />
+              </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>资金类型（对手盘）</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.capitalType} 
-                onChangeText={(text) => setPlan({...plan, capitalType: text})}
-                placeholder="主力资金、游资、散户等"
-              />
+            {/* 买入策略 */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>买入</Text>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>买入方式</Text>
+                <View style={styles.optionContainer}>
+                  {buyMethodOptions.map((option, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[
+                        styles.optionButton,
+                        plan.buy.method === option && styles.selectedOption
+                      ]}
+                      onPress={() => handleBuyChange('method', option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        plan.buy.method === option && styles.selectedOptionText
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.buy.method} 
+                  onChangeText={(text) => handleBuyInput('method', text)}
+                  placeholder="或输入自定义值"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>仓位</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.buy.position} 
+                  onChangeText={(text) => handleBuyChange('position', text)}
+                  placeholder="如：1/5 或 3/5"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>买入条件</Text>
+                <TextInput 
+                  style={[styles.input, styles.textArea]} 
+                  value={plan.buy.conditions} 
+                  onChangeText={(text) => handleBuyChange('conditions', text)}
+                  placeholder="买入时机、价格区间、量能要求等"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>大盘</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.market} 
-                onChangeText={(text) => setPlan({...plan, market: text})}
-                placeholder="大盘走势、量能等"
-              />
+            {/* 卖出策略 */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>卖出</Text>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>卖出方式</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={plan.sell.method} 
+                  onChangeText={(text) => handleSellChange('method', text)}
+                  placeholder="如：止盈、止损、分批卖出等"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>卖出条件</Text>
+                <TextInput 
+                  style={[styles.input, styles.textArea]} 
+                  value={plan.sell.conditions} 
+                  onChangeText={(text) => handleSellChange('conditions', text)}
+                  placeholder="止盈点、止损点、形态变化等"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>板块</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.sector} 
-                onChangeText={(text) => setPlan({...plan, sector: text})}
-                placeholder="热点板块、板块轮动等"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>个股</Text>
-              <TextInput 
-                style={styles.input} 
-                value={plan.stock} 
-                onChangeText={(text) => setPlan({...plan, stock: text})}
-                placeholder="股票代码、名称、技术形态等"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>买入条件</Text>
-              <TextInput 
-                style={[styles.input, styles.textArea]} 
-                value={plan.buyConditions} 
-                onChangeText={(text) => setPlan({...plan, buyConditions: text})}
-                placeholder="买入时机、价格区间、量能要求等"
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>卖出条件</Text>
-              <TextInput 
-                style={[styles.input, styles.textArea]} 
-                value={plan.sellConditions} 
-                onChangeText={(text) => setPlan({...plan, sellConditions: text})}
-                placeholder="止盈点、止损点、形态变化等"
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-
+            {/* 备注 */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>备注</Text>
               <TextInput 
@@ -205,7 +462,7 @@ const App = () => {
                 <View key={index} style={styles.planCard}>
                   <Text style={styles.planDate}>{item.date}</Text>
                   <Text style={styles.planStock}>{item.stock}</Text>
-                  <Text style={styles.planSummary}>{item.buyConditions.substring(0, 50)}...</Text>
+                  <Text style={styles.planSummary}>买入条件: {item.buy.conditions.substring(0, 50)}...</Text>
                   <View style={styles.planActions}>
                     <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
                       <Text style={styles.editButtonText}>编辑</Text>
@@ -370,6 +627,59 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#ff4444',
     fontSize: 14,
+  },
+  // 新增样式
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateInput: {
+    flex: 1,
+    marginRight: 10,
+  },
+  dateButton: {
+    backgroundColor: '#1E90FF',
+    padding: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  dateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  section: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  optionContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  optionButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  selectedOption: {
+    backgroundColor: '#1E90FF',
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  selectedOptionText: {
+    color: '#fff',
+    fontWeight: '500',
   },
 });
 
